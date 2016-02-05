@@ -17,8 +17,8 @@ class Usergen_CLI extends WP_CLI_Command {
 	 *     wp usergen generate 10
 	 *
 	 * @access		public
-	 * @param		array $args
-	 * @param		array $assoc_args
+	 * @param		  array $args
+	 * @param		  array $assoc_args
 	 * @return		void
 	 */
 	public function generate( $args, $assoc_args ) {
@@ -63,17 +63,50 @@ class Usergen_CLI extends WP_CLI_Command {
 	 *     wp usergen purge
 	 *
 	 * @access		public
-	 * @param		array $args
-	 * @param		array $assoc_args
+	 * @param		  array $args
+	 * @param		  array $assoc_args
 	 * @return		void
 	 */
 	public function purge( $args, $assoc_args ) {
+
+		WP_CLI::line( '' );
+		WP_CLI::confirm( 'Are you sure you want to remove all users? This will NOT delete administrators.' );
+
+		$roles_to_delete = $this->get_roles();
+
+		foreach ( $roles_to_delete as $role => $name ) {
+
+			$query_args = array( 'role' => $role, 'number' => 99999999 );
+			$user_query = new WP_User_Query( $query_args );
+			$results    = $user_query->get_results();
+			$total      = $user_query->get_total();
+
+			if( ! empty( $results ) ) {
+
+				WP_CLI::line( '' );
+				$notify = \WP_CLI\Utils\make_progress_bar( "Deleting $total $name(s)", $total );
+
+				for( $i = 0; $i < count( $results ); $i++ ) {
+					$notify->tick();
+					wp_delete_user( $results[$i]->data->ID, null );
+				}
+
+				$notify->finish();
+
+			}
+
+		}
+
+		WP_CLI::line( '' );
+		WP_CLI::success( 'Done.' );
+		WP_CLI::line( '' );
 
 	}
 
 	/**
 	 * Retrieve the mock data from the json file within the plugin's folder.
 	 *
+	 * @access private
 	 * @return mixed
 	 */
 	private function retrieve_mock_data() {
@@ -89,6 +122,7 @@ class Usergen_CLI extends WP_CLI_Command {
 	/**
 	 * Register a user.
 	 *
+	 * @access private
 	 * @param  object $data information of the user.
 	 * @return void
 	 */
@@ -109,6 +143,25 @@ class Usergen_CLI extends WP_CLI_Command {
 			}
 
 		}
+
+	}
+
+	/**
+	 * Retrieve list of user roles to delete.
+	 *
+	 * @access private
+	 * @return array list of roles to delete.
+	 */
+	private function get_roles() {
+
+		global $wp_roles;
+
+		$roles = $wp_roles->get_names();
+
+		if( array_key_exists( 'administrator' , $roles ) )
+			unset( $roles['administrator'] );
+
+		return $roles;
 
 	}
 
