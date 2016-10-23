@@ -1,6 +1,7 @@
 {
     "name": "alessandrotesoro/wp-usergen-cli",
     "description": "Simple command to generate random users for testing purposes.",
+    "type": "wp-cli-package",
     "homepage": "https://github.com/alessandrotesoro/wp-usergen-cli",
     "license": "MIT",
     "require": {
